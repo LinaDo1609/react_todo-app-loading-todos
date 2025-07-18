@@ -16,52 +16,55 @@ export const App: React.FC = () => {
   };
 
   const [todoList, setTodoList] = useState<Todo[]>([]);
+  const [filteredList, setFilteredList] = useState<Todo[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isCompleted, setIsCompleted] = useState(true);
   const [unCompletedCount, setUnCompletedCount] = useState<number>(0);
 
   useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
-
     getTodos()
-      .then(setTodoList)
+      .then(data => {
+        setTodoList(data);
+        setFilteredList(data);
+      })
       .catch(() => {
         setError('Unable to load todos');
-        timer = setTimeout(() => {
-          setError(null);
-        }, 3000);
       });
-
-    return () => clearTimeout(timer);
   }, []);
 
+  // прибираємо помилку через 3 секунди, а після вже видаляємо таймер
   useEffect(() => {
-    const unCompleted = todoList.filter(todo => todo.completed === false);
+    // let timer: ReturnType<typeof setTimeout>;
 
-    if (unCompleted.length === 0) {
+    const timer = setTimeout(() => {
+      setError(null);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [error]);
+
+  useEffect(() => {
+    const uncompleted = todoList.filter(todo => todo.completed === false);
+
+    setUnCompletedCount(uncompleted.length);
+
+    if (uncompleted.length === 0) {
       setIsCompleted(true);
     } else {
       setIsCompleted(false);
     }
-
-    setUnCompletedCount(unCompleted.length);
   }, [todoList]);
 
   const handleFilter = (query: string) => {
     switch (query) {
       case FILTERS.completed:
-        getTodos().then(todos =>
-          setTodoList(todos.filter(todo => todo.completed === true)),
-        );
-
+        setFilteredList(todoList.filter(todo => todo.completed === true));
         break;
       case FILTERS.active:
-        getTodos().then(todos =>
-          setTodoList(todos.filter(todo => todo.completed === false)),
-        );
+        setFilteredList(todoList.filter(todo => todo.completed === false));
         break;
       default:
-        getTodos().then(setTodoList);
+        setFilteredList(todoList);
     }
   };
 
@@ -72,7 +75,7 @@ export const App: React.FC = () => {
       <div className="todoapp__content">
         <Header toggleAll={isCompleted} />
 
-        <TodoList todoList={todoList} />
+        <TodoList todoList={filteredList} />
 
         {todoList.length > 0 && (
           <Footer filter={handleFilter} unCompletedCount={unCompletedCount} />
